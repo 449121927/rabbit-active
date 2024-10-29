@@ -38,6 +38,7 @@ export default function Home() {
       name: jsonText.name,
       email: jsonText.email,
       mac: jsonText.mac,
+      beginTime: jsonText.beginTime,
       days: days,
     })
     const sign = signRSA(newText, privateKey)
