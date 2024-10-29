@@ -1,199 +1,100 @@
-'use client'
-import { useState } from 'react'
-import { Button, Input, message, Card, Radio } from 'antd'
+import Image from "next/image";
 
-import { decryptRSA, signRSA, stringToHex } from '@/hooks/rsa'
-
-import { privateKey } from '@/utils/key'
-import { copyToClipboard } from '@/utils/clipboard'
-
-export default function Playground() {
-
-  const [days, setDays] = useState('')
-  const [messageApi, contextHolder] = message.useMessage()
-
-  // const generateEncryptedActivationMessage = async () => {
-  //
-  //   if (encryptedCode && decryptedData) {
-  //     if (days) {
-  //       const timeBegin = Math.floor(Date.now() / 1000);
-  //       const timeEnd = timeBegin + parseInt(days) * 24 * 60 * 60;
-  //       console.log(days)
-  //       const actmsg2 = {
-  //         ...decryptedData,
-  //         days: days,
-  //         time_begin: timeBegin,
-  //         time_end: timeEnd,
-  //       };
-  //
-  //       const actmsg2String = JSON.stringify(actmsg2);
-  //       const key = CryptoJS.enc.Hex.parse(stringToHex(keystr));
-  //       const encrypted = CryptoJS.AES.encrypt(actmsg2String, key, {
-  //         mode: CryptoJS.mode.ECB,
-  //         padding: CryptoJS.pad.Pkcs7
-  //       });
-  //
-  //       setActivationCode(encrypted.ciphertext.toString());
-  //     } else {
-  //       messageApi.open({
-  //         type: 'error',
-  //         content: '填写激活天数'
-  //       })
-  //     }
-  //   } else {
-  //     messageApi.open({
-  //       type: 'error',
-  //       content: '机器码为空或未解码'
-  //     })
-  //   }
-  // };
-
-  // const decryptActivationCode = () => {
-  //   try {
-  //     let key = stringToHex(keystr);
-  //     key = CryptoJS.enc.Hex.parse(key);
-  //     const decrypted = CryptoJS.AES.decrypt(CryptoJS.format.Hex.parse(encryptedCode), key, {
-  //       mode: CryptoJS.mode.ECB,
-  //       padding: CryptoJS.pad.Pkcs7,
-  //     });
-  //     const decryptedString = CryptoJS.enc.Utf8.stringify(decrypted);
-  //     setDecryptedCode(decryptedString);
-  //
-  //     const parsedData = JSON.parse(decryptedString);
-  //     setDecryptedData(parsedData);
-  //
-  //     messageApi.open({
-  //       type: 'success',
-  //       content: '解密成功'
-  //     })
-  //   } catch (error) {
-  //     messageApi.open({
-  //       type: 'error',
-  //       content: '解密失败'
-  //     }).then(() => {
-  //       console.log(error)
-  //     })
-  //   }
-  // };
-
-  // const copyToClipboard = () => {
-  //   navigator.clipboard.writeText(activationCode).then(
-  //     () => messageApi.open({
-  //       type: 'success',
-  //       content: '复制成功'
-  //     }),
-  //     () => messageApi.open({
-  //       type: 'error',
-  //       content: '复制失败'
-  //     })
-  //   );
-  // };
-
-  const options = [
-    { label: '2天', value: 2 },
-    { label: '180天', value: 180 },
-    { label: '1000天', value: 1000 },
-    { label: '永久', value: 9999 }
-  ]
-
-  const [cipherText, setCipherText] = useState('')
-  const [plainText, setPlainText] = useState('')
-  const [signature, setSignature] = useState('')
-
-  function decryptCipherText() {
-    const text = decryptRSA(cipherText, privateKey)
-    if (text) {
-      setPlainText(text)
-      messageApi.success('解密成功').then()
-    } else {
-      messageApi.error('解密失败111').then(() => console.log('text\t' + text))
-    }
-  }
-
-  function signActivationCode() {
-    const jsonText = JSON.parse(plainText)
-    const newText = JSON.stringify({
-      name: jsonText.name,
-      email: jsonText.email,
-      mac: jsonText.mac,
-      days: days,
-    })
-    const sign = signRSA(newText, privateKey)
-    if (sign){
-      setSignature(sign)
-      messageApi.success('生成激活码成功').then(() => console.log(newText))
-    }
-    else messageApi.error('生成激活码失败').then(r => console.log(r))
-  }
-
-
+export default function Home() {
   return (
-    <>
-      { contextHolder }
-      <div className="flex h-screen flex-row items-center justify-around">
-        <div className="flex w-[47%] min-w-[600px] flex-col space-y-10">
-
-          <Card title="兔兔打印注册机">
-            <div className="flex flex-col space-y-8">
-
-              <div className="mt-4 space-y-3">
-                <p className="text-2xl font-bold">查看用户注册信息</p>
-                <Input
-                  type="text"
-                  placeholder="请输入用户识别码"
-                  value={ cipherText }
-                  onChange={ (e) => setCipherText(e.target.value) }
-                  style={ { width: '100%', marginBottom: '10px', padding: '8px' } }
-                />
-                <div className="flex justify-center">
-                  <Button type="primary" shape="round" onClick={ decryptCipherText } style={ { width: '95%', padding: '10px' } }>
-                    查看信息
-                  </Button>
-                </div>
-                <div style={ { wordBreak: 'break-all' } }>
-                  <p className="text-xl">用户信息：</p>
-                  <p>{ plainText }</p>
-                </div>
-              </div>
-
-
-              {/* 生成激活码 */ }
-              <div className="space-y-4">
-                <p className="text-2xl font-bold">生成激活码</p>
-                <Radio.Group block
-                             options={ options }
-                             defaultValue={ 2 }
-                             optionType="button"
-                             buttonStyle="solid"
-                             onChange={ (e) => {
-                               setDays(e.target.value)
-                               console.log(e.target.value)
-                             } }
-                />
-
-                <div className="mt-2 flex justify-center">
-                  <Button color="danger" variant="solid" shape="round" className="w-[95%]" onClick={ signActivationCode }
-                  >
-                    生成
-                  </Button>
-                </div>
-
-                <div style={ { marginTop: '20px', wordBreak: 'break-all' } }>
-                  <p className="mt-2 w-full text-xl">激活码:</p>
-                  <p className="mt-1">{ signature }</p>
-                </div>
-                <div className="flex w-full">
-                  <Button className="ml-5" onClick={ () => copyToClipboard(signature, messageApi) }>
-                    复制激活码
-                  </Button>
-                </div>
-              </div>
-
-            </div>
-          </Card>
-
+  <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
+      <main className="row-start-2 flex flex-col items-center gap-8 sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={180}
+          height={38}
+          priority
+        />
+        <ol className="list-inside list-decimal text-center font-[family-name:var(--font-geist-mono)] text-sm sm:text-left">
+          <li className="mb-2">
+            Get started by editing{" "}
+            <code className="rounded bg-black/[.05] px-1 py-0.5 font-semibold dark:bg-white/[.06]">
+              src/app/page.tsx
+            </code>
+            .
+          </li>
+          <li>Save and see your changes instantly.</li>
+        </ol>
+        <div className="flex flex-col items-center gap-4 sm:flex-row">
+          <a
+            className="flex h-10 items-center justify-center gap-2 rounded-full border border-solid border-transparent bg-foreground px-4 text-sm text-background transition-colors hover:bg-[#763131FF] sm:h-12 sm:px-5 sm:text-base dark:hover:bg-[#ccc]"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={20}
+              height={20}
+            />
+            Deploy now
+          </a>
+          <a
+            className="flex h-10 items-center justify-center rounded-full border border-solid border-black/[.08] px-4 text-sm transition-colors hover:border-transparent hover:bg-[#f2f2f2] sm:h-12 sm:min-w-44 sm:px-5 sm:text-base dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read our docs
+          </a>
         </div>
-      </div>
-    </>
-  )
+      </main>
+      <footer className="row-start-3 flex flex-wrap items-center justify-center gap-6">
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/file.svg"
+            alt="File icon"
+            width={16}
+            height={16}
+          />
+          Learn
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/window.svg"
+            alt="Window icon"
+            width={16}
+            height={16}
+          />
+          Examples
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/globe.svg"
+            alt="Globe icon"
+            width={16}
+            height={16}
+          />
+          Go to nextjs.org →
+        </a>
+      </footer>
+    </div>
+  );
 }
